@@ -5,6 +5,7 @@ require('@nomiclabs/hardhat-ethers');
 require('@nomiclabs/hardhat-waffle');
 require('hardhat-deploy');
 require('hardhat-deploy-ethers');
+require("hardhat-gas-reporter");
 
 real_accounts = undefined;
 if(process.env.DEPLOYER_KEY && process.env.OWNER_KEY) {
@@ -61,5 +62,10 @@ module.exports = {
     deployer: {
       default: 1,
     },
+  },
+  gasReporter: {
+    currency: 'USD',
+    gasPrice: 50,
+    coinmarketcap: 'eb69f048-cec9-4aa4-876f-7e8f69986c71'
   }
 };
