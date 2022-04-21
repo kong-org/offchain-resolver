@@ -1,10 +1,15 @@
 import { Server } from '@chainlink/ccip-read-server';
 import { ethers, BytesLike } from 'ethers';
 import { hexConcat, Result } from 'ethers/lib/utils';
-import { ETH_COIN_TYPE } from './utils';
-import { abi as IResolverService_abi } from '@ensdomains/offchain-resolver-contracts/artifacts/contracts/OffchainResolver.sol/IResolverService.json';
+// import { ETH_COIN_TYPE } from './utils';
+// import { abi as IResolverService_abi } from '@ensdomains/offchain-resolver-contracts/artifacts/contracts/OffchainResolver.sol/IResolverService.json';
 import { abi as Resolver_abi } from '@ensdomains/ens-contracts/artifacts/contracts/resolvers/Resolver.sol/Resolver.json';
+import { Provider } from '@ethersproject/abstract-provider';
 const Resolver = new ethers.utils.Interface(Resolver_abi);
+
+const IResolverService_abi = ["function resolve(bytes32 chipId, bytes calldata data)"];
+
+// console.log('Resolve sighash:', (new ethers.utils.Interface(IResolverService_abi)).getSighash('resolve'));
 
 interface DatabaseResult {
   result: any[];
@@ -38,27 +43,30 @@ function decodeDnsName(dnsname: Buffer) {
 
 const queryHandlers: {
   [key: string]: (
-    db: Database,
+    db: Provider,
     name: string,
     args: Result
   ) => Promise<DatabaseResult>;
 } = {
   'addr(bytes32)': async (db, name, _args) => {
-    const { addr, ttl } = await db.addr(name, ETH_COIN_TYPE);
+    console.log(db, name);
+    const { addr, ttl } = { addr: 69, ttl: 69 };// await db.addr(name, ETH_COIN_TYPE);
     return { result: [addr], ttl };
   },
   'addr(bytes32,uint256)': async (db, name, args) => {
-    const { addr, ttl } = await db.addr(name, args[0]);
+    console.log(db, name, args);
+    const { addr, ttl } = { addr: 69, ttl: 69 };// await db.addr(name, args[0]);
     return { result: [addr], ttl };
   },
   'text(bytes32,string)': async (db, name, args) => {
-    const { value, ttl } = await db.text(name, args[0]);
+    console.log(db, name, args);
+    const { value, ttl } = { value: 69, ttl: 69 };// await db.text(name, args[0]);
     return { result: [value], ttl };
   },
 };
 
 async function query(
-  db: Database,
+  db: Provider,
   name: string,
   data: string
 ): Promise<{ result: BytesLike; validUntil: number }> {
@@ -85,7 +93,7 @@ async function query(
   };
 }
 
-export function makeServer(signer: ethers.utils.SigningKey, db: Database) {
+export function makeServer(signer: ethers.utils.SigningKey, db: Provider) {
   const server = new Server();
   server.add(IResolverService_abi, [
     {
@@ -118,7 +126,7 @@ export function makeServer(signer: ethers.utils.SigningKey, db: Database) {
 export function makeApp(
   signer: ethers.utils.SigningKey,
   path: string,
-  db: Database
+  db: Provider
 ) {
   return makeServer(signer, db).makeApp(path);
 }

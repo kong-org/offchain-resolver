@@ -5,7 +5,7 @@ const { defaultAbiCoder, SigningKey, arrayify, hexConcat } = require("ethers/lib
 
 const TEST_ADDRESS = "0xCAfEcAfeCAfECaFeCaFecaFecaFECafECafeCaFe";
 
-describe('OffchainResolver', function (accounts) {
+describe('KongResolver', function (accounts) {
     let signer, address, resolver, snapshot, signingKey, signingAddress;
 
     async function fetcher(url, json) {
@@ -24,8 +24,8 @@ describe('OffchainResolver', function (accounts) {
         signingAddress = ethers.utils.computeAddress(signingKey.privateKey);
         signer = await ethers.provider.getSigner();
         address = await signer.getAddress();
-        const OffchainResolver = await ethers.getContractFactory("OffchainResolver");
-        resolver = await OffchainResolver.deploy("http://localhost:8080/", [signingAddress]);
+        const KongResolver = await ethers.getContractFactory("KongResolver");
+        resolver = await KongResolver.deploy("http://localhost:8080/", signingAddress);
     });
 
     beforeEach(async () => {
@@ -48,7 +48,8 @@ describe('OffchainResolver', function (accounts) {
 
     describe('resolve()', async () => {
         it('returns a CCIP-read error', async () => {
-            await expect(resolver.resolve(dnsName('test.eth'), '0x')).to.be.revertedWith('OffchainLookup');
+            console.log(await resolver.resolve('0x29379cb02961f257660c026a78951e934cb58c26e55ce0e59cb4218f6522a300', '0x'));
+            await expect(resolver.resolve('0x29379cb02961f257660c026a78951e934cb58c26e55ce0e59cb4218f6522a300', '0x')).to.be.revertedWith('OffchainLookup');
         });
     });
 

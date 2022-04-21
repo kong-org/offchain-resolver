@@ -4,7 +4,7 @@ module.exports = async ({deployments}) => {
     const {deploy} = deployments;
     const signers = await ethers.getSigners();
     const owner = signers[0].address;
-    await deploy('ENSRegistry', {
+    await deploy('RootRegistry', {
         from: owner,
         args: [],
         log: true,
