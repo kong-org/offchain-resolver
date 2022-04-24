@@ -2,6 +2,7 @@ import { makeApp } from './server';
 import { Command } from 'commander';
 import { readFileSync } from 'fs';
 import { ethers } from 'ethers';
+import ResolverABI from './L2KongResolverABI';
 const program = new Command();
 program
   .requiredOption(
@@ -22,8 +23,9 @@ if (privateKey.startsWith('@')) {
 }
 const address = ethers.utils.computeAddress(privateKey);
 const signer = new ethers.utils.SigningKey(privateKey);
-const db = new ethers.providers.JsonRpcProvider(options.rpc);
-const app = makeApp(signer, '/', db);
+const provider = new ethers.providers.JsonRpcProvider(options.rpc);
+const resolver = new ethers.Contract(options.resolverAddress, ResolverABI, provider);
+const app = makeApp(signer, '/', resolver);
 console.log(`Serving on port ${options.port} with signing address ${address}`);
 app.listen(parseInt(options.port));
 
