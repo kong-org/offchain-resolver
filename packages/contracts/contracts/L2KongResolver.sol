@@ -49,12 +49,12 @@ contract L2KongResolver is RegistryForwarder {
 
     // END APP STUFF
 
-    event RecordUpdate(uint32 timestamp, bytes getterCalldata, bytes32 recordHash);
+    event RecordUpdate(uint64 timestamp, bytes getterCalldata, bytes32 recordHash);
 
-    // bytes28 is used here to squeeze HistoricalEntry into one 32 byte word
+    // bytes24 is used here to squeeze HistoricalEntry into one 32 byte word
     struct HistoricalEntry {
-        uint32 timestamp;
-        bytes28 recordHash; // leading 14 bytes of recordHash
+        uint64 timestamp;
+        bytes24 recordHash; // leading 14 bytes of recordHash
     }
     // map from hash(calldata) -> historical entries array
     // E.g. tsm(bytes32 chipId) might have selector 0x69694242 which would be the key in this map
@@ -63,8 +63,8 @@ contract L2KongResolver is RegistryForwarder {
     // TODO: determine whether should emit entry itself or the hash
     function _recordHistoricalEntry(bytes memory getterCalldata, bytes32 recordHash) internal {
         bytes32 calldataHash = keccak256(getterCalldata);
-        _historicalEntries[calldataHash].push(HistoricalEntry(uint32(block.timestamp), bytes28(recordHash)));
-        emit RecordUpdate(uint32(block.timestamp), getterCalldata, recordHash);
+        _historicalEntries[calldataHash].push(HistoricalEntry(uint64(block.timestamp), bytes24(recordHash)));
+        emit RecordUpdate(uint64(block.timestamp), getterCalldata, recordHash);
     }
 
     /* 
@@ -79,7 +79,7 @@ contract L2KongResolver is RegistryForwarder {
         If there is no historical entry with C' == C but there's a valid signature from the bridger, spanking may occur
     */
     function slashBridger(
-        uint32 guaranteeTimestamp,
+        uint64 guaranteeTimestamp,
         bytes calldata getterCalldata,
         bytes calldata packedReturnVal, // the data the bridger alledgedly resolved packed using abi.encodePacked
         // parameters for signature from bridger over timestamp, chipId, <entry fields>
@@ -121,7 +121,7 @@ contract L2KongResolver is RegistryForwarder {
                 continue;
             }
             // if the data is wrong in the slightest way we gotta spank
-            if (_historicalEntries[calldataHash][i].recordHash != bytes28(recordHash)) {
+            if (_historicalEntries[calldataHash][i].recordHash != bytes24(recordHash)) {
                 _performSlash();
             }
             return;

@@ -6,7 +6,7 @@ import "./IExtendedResolver.sol";
 import "./SignatureVerifier.sol";
 
 interface IResolverService {
-    function resolve(bytes32 chipId, bytes calldata data) external view returns(bytes memory result, uint64 expires, bytes memory sig);
+    function resolve(bytes calldata data) external view returns(bytes memory result, uint64 expires, bytes memory sig);
 }
 
 /**
@@ -25,18 +25,17 @@ interface IResolverService {
         bridger = _bridger;
     }
 
-    function makeSignatureHash(address target, uint64 expires, bytes memory request, bytes memory result) external pure returns(bytes32) {
-        return SignatureVerifier.makeSignatureHash(target, expires, request, result);
+    function makeSignatureHash(address target, uint64 validUntil, bytes memory request, bytes memory result) external pure returns(bytes32) {
+        return SignatureVerifier.makeSignatureHash(target, validUntil, request, result);
     }
 
     /**
      * Resolves a name, as specified by ENSIP 10.
-     * @param chipId The hash of the chip's public key
      * @param data The ABI encoded data for the underlying resolution function (Eg, addr(bytes32), text(bytes32,string), etc).
      * @return The return data, ABI encoded identically to the underlying function.
      */
-    function resolve(bytes32 chipId, bytes calldata data) external override view returns(bytes memory) {
-        bytes memory callData = abi.encodeWithSelector(IResolverService.resolve.selector, chipId, data);
+    function resolve(bytes calldata data) external override view returns(bytes memory) {
+        bytes memory callData = abi.encodeWithSelector(IResolverService.resolve.selector, data);
         string[] memory urls = new string[](1);
         urls[0] = url;
         revert OffchainLookup(

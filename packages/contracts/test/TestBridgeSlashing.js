@@ -47,7 +47,7 @@ describe("L2Resolver bridge slashing", function () {
     const getterCalldata = RESOLVER_INTERFACE.encodeFunctionData('ellipticCurve', [chipIds[0]]);
     const packedReturnVal = ethers.utils.solidityPack(['uint8'], [1]);
     const payloadHash = ethers.utils.solidityKeccak256(
-      ['uint32', 'bytes', 'bytes'],
+      ['uint64', 'bytes', 'bytes'],
       [lastBlock.timestamp, getterCalldata, packedReturnVal]
     );
     // console.log('phash', payloadHash);
@@ -76,7 +76,7 @@ describe("L2Resolver bridge slashing", function () {
     const getterCalldata = RESOLVER_INTERFACE.encodeFunctionData('tsm', [chipIds[11]]);
     const packedReturnVal = ethers.utils.solidityPack(['address'], [tsmAddress]);
     const payloadHash = ethers.utils.solidityKeccak256(
-      ['uint32', 'bytes', 'bytes'],
+      ['uint64', 'bytes', 'bytes'],
       [lastBlock.timestamp, getterCalldata, packedReturnVal]
     );
     // console.log('phash', payloadHash);
@@ -105,7 +105,7 @@ describe("L2Resolver bridge slashing", function () {
     const getterCalldata = RESOLVER_INTERFACE.encodeFunctionData('tsm', [chipIds[11]]);
     const packedReturnVal = ethers.utils.solidityPack(['address'], ['0x696934656e59a6c22c19b8609ce6f422cca312f3']);
     const payloadHash = ethers.utils.solidityKeccak256(
-      ['uint32', 'bytes', 'bytes'],
+      ['uint64', 'bytes', 'bytes'],
       [lastBlock.timestamp, getterCalldata, packedReturnVal]
     );
     // console.log('phash', payloadHash);
@@ -130,7 +130,7 @@ describe("L2Resolver bridge slashing", function () {
     const getterCalldata = RESOLVER_INTERFACE.encodeFunctionData('tsm', ['0x372e8c89f78e2da7f4cc4660b7ebe3b297abbf6e4d3b6e596e549364d243f388']);
     const packedReturnVal = ethers.utils.solidityPack(['address'], [tsmAddress]); // correct tsm for chipsIds[11] and  chipIds[4]
     const payloadHash = ethers.utils.solidityKeccak256(
-      ['uint32', 'bytes', 'bytes'],
+      ['uint64', 'bytes', 'bytes'],
       [lastBlock.timestamp, getterCalldata, packedReturnVal]
     );
     // console.log('phash', payloadHash);

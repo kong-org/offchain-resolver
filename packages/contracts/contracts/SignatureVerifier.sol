@@ -27,7 +27,7 @@ library SignatureVerifier {
         (bytes memory result, uint64 expires, bytes memory sig) = abi.decode(response, (bytes, uint64, bytes));
         address signer = ECDSA.recover(makeSignatureHash(address(this), expires, request, result), sig);
         require(
-            expires >= block.timestamp,
+            expires >= block.timestamp - 60, // KONG difference from ENS is that we impose a fixed 60 second validity for the signature
             "SignatureVerifier: Signature expired");
         return (signer, result);
     }

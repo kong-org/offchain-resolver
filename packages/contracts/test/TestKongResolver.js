@@ -1,6 +1,5 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const namehash = require('eth-ens-namehash');
 const { defaultAbiCoder, SigningKey, arrayify, hexConcat } = require("ethers/lib/utils");
 
 const TEST_ADDRESS = "0xCAfEcAfeCAfECaFeCaFecaFecaFECafECafeCaFe";
@@ -8,18 +7,8 @@ const TEST_ADDRESS = "0xCAfEcAfeCAfECaFeCaFecaFecaFECafECafeCaFe";
 describe('KongResolver', function (accounts) {
     let signer, address, resolver, snapshot, signingKey, signingAddress;
 
-    async function fetcher(url, json) {
-        console.log({url, json});
-        return {
-            jobRunId: "1",
-            statusCode: 200,
-            data: {
-                result: "0x"
-            }
-        };
-    }
-
     before(async () => {
+        // Set up the resolver with a bridger
         signingKey = new SigningKey(ethers.utils.randomBytes(32));
         signingAddress = ethers.utils.computeAddress(signingKey.privateKey);
         signer = await ethers.provider.getSigner();
@@ -38,7 +27,9 @@ describe('KongResolver', function (accounts) {
 
     describe('supportsInterface()', async () => {
         it('supports known interfaces', async () => {
-            expect(await resolver.supportsInterface("0x9061b923")).to.equal(true); // IExtendedResolver
+            // const iface = new ethers.utils.Interface(['function resolve(bytes memory data)']);
+            // console.log('d',iface.getSighash('resolve'));
+            expect(await resolver.supportsInterface("0xe4056186")).to.equal(true); // IExtendedResolver
         });
 
         it('does not support a random interface', async () => {
@@ -48,26 +39,24 @@ describe('KongResolver', function (accounts) {
 
     describe('resolve()', async () => {
         it('returns a CCIP-read error', async () => {
-            console.log(await resolver.resolve('0x29379cb02961f257660c026a78951e934cb58c26e55ce0e59cb4218f6522a300', '0x'));
-            await expect(resolver.resolve('0x29379cb02961f257660c026a78951e934cb58c26e55ce0e59cb4218f6522a300', '0x')).to.be.revertedWith('OffchainLookup');
+            await expect(resolver.resolve('0x')).to.be.revertedWith('OffchainLookup');
         });
     });
 
     describe('resolveWithProof()', async () => {
-        let name, expires, iface, callData, resultData, sig;
+        let expires, iface, callData, resultData, sig;
 
         before(async () => {
-            name = 'test.eth';
-            expires = Math.floor(Date.now() / 1000 + 3600);
+            expires = Math.floor(Date.now() / 1000);
             // Encode the nested call to 'addr'
-            iface = new ethers.utils.Interface(["function addr(bytes32) returns(address)"]);
-            const addrData = iface.encodeFunctionData("addr", [namehash.hash('test.eth')]);
+            iface = new ethers.utils.Interface(["function tsm(bytes32) returns(address)"]);
+            const getterCallData = iface.encodeFunctionData("tsm", ['0xd9f67dae4cf4d07d295e968b3cf3890fca48b3d40d6cc8b17db39cebd26faa3d']);
 
             // Encode the outer call to 'resolve'
-            callData = resolver.interface.encodeFunctionData("resolve", [dnsName('test.eth'), addrData]);
+            callData = resolver.interface.encodeFunctionData("resolve", [getterCallData]);
 
             // Encode the result data
-            resultData = iface.encodeFunctionResult("addr", [TEST_ADDRESS]);
+            resultData = iface.encodeFunctionResult("tsm", [TEST_ADDRESS]);
 
             // Generate a signature hash for the response from the gateway
             const callDataHash = await resolver.makeSignatureHash(resolver.address, expires, callData, resultData);
@@ -81,7 +70,7 @@ describe('KongResolver', function (accounts) {
             const response = defaultAbiCoder.encode(['bytes', 'uint64', 'bytes'], [resultData, expires, hexConcat([sig.r, sig._vs])]);
 
             // Call the function with the request and response
-            const [result] = iface.decodeFunctionResult("addr", await resolver.resolveWithProof(response, callData));
+            const [result] = iface.decodeFunctionResult("tsm", await resolver.resolveWithProof(response, callData));
             expect(result).to.equal(TEST_ADDRESS);
         });
 
@@ -99,30 +88,10 @@ describe('KongResolver', function (accounts) {
 
         it('reverts given an expired signature', async () => {
             // Generate the response data
-            const response = defaultAbiCoder.encode(['bytes', 'uint64', 'bytes'], [resultData, Math.floor(Date.now() / 1000 - 1), hexConcat([sig.r, sig._vs])]);
+            const response = defaultAbiCoder.encode(['bytes', 'uint64', 'bytes'], [resultData, Math.floor(Date.now() / 1000 - 69), hexConcat([sig.r, sig._vs])]);
 
             // Call the function with the request and response
             await expect(resolver.resolveWithProof(response, callData)).to.be.reverted;
         });
     });
 });
-
-function dnsName(name) {
-    // strip leading and trailing .
-    const n = name.replace(/^\.|\.$/gm, '');
-
-    var bufLen = (n === '') ? 1 : n.length + 2;
-    var buf = Buffer.allocUnsafe(bufLen);
-
-    offset = 0;
-    if (n.length) {
-        const list = n.split('.');
-        for (let i = 0; i < list.length; i++) {
-            const len = buf.write(list[i], offset + 1)
-            buf[offset] = len;
-            offset += len + 1;
-        }
-    }
-    buf[offset++] = 0;
-    return '0x' + buf.reduce((output, elem) => (output + ('0' + elem.toString(16)).slice(-2)), '');
-}
