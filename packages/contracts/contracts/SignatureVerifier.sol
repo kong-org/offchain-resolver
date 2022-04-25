@@ -31,4 +31,10 @@ library SignatureVerifier {
             "SignatureVerifier: Signature expired");
         return (signer, result);
     }
+
+    function recoverSignedResponse(bytes calldata request, bytes calldata response, address target) internal pure returns(address, bytes memory, uint64) {
+        (bytes memory result, uint64 expires, bytes memory sig) = abi.decode(response, (bytes, uint64, bytes));
+        address signer = ECDSA.recover(makeSignatureHash(target, expires, request, result), sig);
+        return (signer, result, expires);
+    }
 }

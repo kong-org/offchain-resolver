@@ -35,15 +35,15 @@ contract RootRegistry is IRootRegistry {
     }
 
     function batchMint(
-        address manufacturerAddress,
         bytes32[] memory chipIds,
         uint8[] memory ellipticCurves,
         uint32[] memory stakingExpirations,
         address[] memory resolvers
     ) public {
         for (uint16 i = 0; i < chipIds.length; ++i) {
+            require(_records[chipIds[i]].ellipticCurve == 0, "At least one chip is already in the registry");
             RootRecord memory record = RootRecord(
-                manufacturerAddress,
+                msg.sender,
                 ellipticCurves[i],
                 stakingExpirations[i],
                 resolvers[i]

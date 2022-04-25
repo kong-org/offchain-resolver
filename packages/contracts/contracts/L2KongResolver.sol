@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "./RegistryForwarder.sol";
+import "./SignatureVerifier.sol";
 
 import "hardhat/console.sol";
 
@@ -28,7 +29,7 @@ contract L2KongResolver is RegistryForwarder {
     function setTsm(bytes32 chipId, address newTsm) public {
         _tsms[chipId] = newTsm;
         bytes memory getterCalldata = abi.encodeWithSelector(this.tsm.selector, chipId);
-        _recordHistoricalEntry(getterCalldata, keccak256(abi.encodePacked(newTsm)));
+        _recordHistoricalEntry(getterCalldata, keccak256(abi.encode(newTsm)));
     }
 
     // END TSM STUFF
@@ -44,7 +45,7 @@ contract L2KongResolver is RegistryForwarder {
     function setApp(bytes32 chipId, string calldata newApp) public {
         _apps[chipId] = newApp;
         bytes memory getterCalldata = abi.encodeWithSelector(this.app.selector, chipId);
-        _recordHistoricalEntry(getterCalldata, keccak256(abi.encodePacked(newApp)));
+        _recordHistoricalEntry(getterCalldata, keccak256(abi.encode(newApp)));
     }
 
     // END APP STUFF
@@ -79,35 +80,31 @@ contract L2KongResolver is RegistryForwarder {
         If there is no historical entry with C' == C but there's a valid signature from the bridger, spanking may occur
     */
     function slashBridger(
-        uint64 guaranteeTimestamp,
-        bytes calldata getterCalldata,
-        bytes calldata packedReturnVal, // the data the bridger alledgedly resolved packed using abi.encodePacked
-        // parameters for signature from bridger over timestamp, chipId, <entry fields>
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        address target,
+        bytes calldata gatewayRequest,
+        bytes calldata gatewayResponse //the data the bridger responded with encoded as (result, expires, signature)
     ) public {
         // console.log("Attempting spank");
-        bytes32 signatureHash = keccak256(
-            abi.encodePacked(
-                "\x19Ethereum Signed Message:\n32",
-                keccak256(abi.encodePacked(guaranteeTimestamp, getterCalldata, packedReturnVal))
-            )
+        (address signer, bytes memory gatewayResult, uint64 validUntil) = SignatureVerifier.recoverSignedResponse(
+            gatewayRequest,
+            gatewayResponse,
+            target
         );
-        address signer = ecrecover(signatureHash, v, r, s);
+
         if (signer != _bridger) {
-            // console.log("Spank invalid because ecrecover did not return bridger");
-            // console.log(signer);
             // if the bridger didn't sign the message, we can't spank him
             return;
         }
 
-        bytes32 recordHash = keccak256(packedReturnVal);
+        bytes memory getterCalldata = abi.decode(gatewayRequest[4:], (bytes));
         bytes32 calldataHash = keccak256(getterCalldata);
+        bytes32 recordHash = keccak256(gatewayResult);
+
         uint8 forwardedFunctionResult = _checkForwardedFunctions(getterCalldata, recordHash);
         if (forwardedFunctionResult == 1) {
             return;
         } else if (forwardedFunctionResult == 0) {
+            console.log("Forwarded");
             _performSlash();
         }
 
@@ -115,7 +112,7 @@ contract L2KongResolver is RegistryForwarder {
         for (uint256 b = 0; b < _historicalEntries[calldataHash].length; ++b) {
             uint256 i = _historicalEntries[calldataHash].length - b - 1;
             // console.log("i", i);
-            if (_historicalEntries[calldataHash][i].timestamp > guaranteeTimestamp) {
+            if (_historicalEntries[calldataHash][i].timestamp > validUntil) {
                 // loop until we get to the entries BEFORE the guarantee timestamp
                 // console.log(_historicalEntries[i].timestamp);
                 continue;
@@ -127,22 +124,40 @@ contract L2KongResolver is RegistryForwarder {
             return;
         }
         // if we got to the end that means the bridger signed a message for an invalid chipId, a big nono
+        console.log("Got to end");
         _performSlash();
         return;
     }
 
-    function _checkForwardedFunctions(bytes calldata getterCalldata, bytes32 recordHash) internal view returns (uint8) {
-        bytes4 getterSelector = bytes4(getterCalldata[0:4]);
-        bytes32 chipId = bytes32(getterCalldata[4:36]);
+    // utility to help with unit testing
+    function makeSignatureHash(
+        address target,
+        uint64 validUntil,
+        bytes memory request,
+        bytes memory result
+    ) external pure returns (bytes32) {
+        return SignatureVerifier.makeSignatureHash(target, validUntil, request, result);
+    }
+
+    function _checkForwardedFunctions(bytes memory getterCalldata, bytes32 recordHash) internal view returns (uint8) {
+        bytes4 getterSelector = bytes4(getterCalldata);
+        bytes memory getterArgs = new bytes(getterCalldata.length);
+
+        for (uint256 i = 4; i < getterCalldata.length; ++i) {
+            getterArgs[i - 4] = getterCalldata[i];
+        }
+        bytes32 chipId = abi.decode(getterArgs, (bytes32));
+        // bytes4 getterSelector = bytes4(request[4:8]); // first 4 bytes are resolve() fxn selector
+        // bytes32 chipId = bytes32(request[8:40]);
 
         if (getterSelector == RegistryForwarder.manufacturer.selector) {
-            return keccak256(abi.encodePacked(manufacturer(chipId))) == recordHash ? 1 : 0;
+            return keccak256(abi.encode(manufacturer(chipId))) == recordHash ? 1 : 0;
         } else if (getterSelector == RegistryForwarder.ellipticCurve.selector) {
-            return keccak256(abi.encodePacked(ellipticCurve(chipId))) == recordHash ? 1 : 0;
+            return keccak256(abi.encode(ellipticCurve(chipId))) == recordHash ? 1 : 0;
         } else if (getterSelector == RegistryForwarder.stakingExpiration.selector) {
-            return keccak256(abi.encodePacked(stakingExpiration(chipId))) == recordHash ? 1 : 0;
+            return keccak256(abi.encode(stakingExpiration(chipId))) == recordHash ? 1 : 0;
         } else if (getterSelector == RegistryForwarder.resolver.selector) {
-            return keccak256(abi.encodePacked(resolver(chipId))) == recordHash ? 1 : 0;
+            return keccak256(abi.encode(resolver(chipId))) == recordHash ? 1 : 0;
         }
         return 2;
     }

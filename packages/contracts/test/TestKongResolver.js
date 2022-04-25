@@ -59,10 +59,10 @@ describe('KongResolver', function (accounts) {
             resultData = iface.encodeFunctionResult("tsm", [TEST_ADDRESS]);
 
             // Generate a signature hash for the response from the gateway
-            const callDataHash = await resolver.makeSignatureHash(resolver.address, expires, callData, resultData);
+            const responseHash = await resolver.makeSignatureHash(resolver.address, expires, callData, resultData);
 
             // Sign it
-            sig = signingKey.signDigest(callDataHash);
+            sig = signingKey.signDigest(responseHash);
         })
 
         it('resolves an address given a valid signature', async () => {

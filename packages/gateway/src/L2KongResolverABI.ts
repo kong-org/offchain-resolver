@@ -20,9 +20,9 @@ export default [
         "inputs": [
             {
                 "indexed": false,
-                "internalType": "uint32",
+                "internalType": "uint64",
                 "name": "timestamp",
-                "type": "uint32"
+                "type": "uint64"
             },
             {
                 "indexed": false,
@@ -155,9 +155,9 @@ export default [
     {
         "inputs": [
             {
-                "internalType": "uint32",
+                "internalType": "uint64",
                 "name": "guaranteeTimestamp",
-                "type": "uint32"
+                "type": "uint64"
             },
             {
                 "internalType": "bytes",

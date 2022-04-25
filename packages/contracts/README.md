@@ -1,12 +1,12 @@
 # KONG fork details
-This fork is based off an example that shows how to have an EIP3668 resolver that resolves from off chain data. KONG needs more than just a resolver, we need an entire registry on L2. So the fork introduces L1Registry.sol, IExtendedEntryGetter.sol, and L2Registry.sol smart contracts
+This fork is based off an example that shows how to have an EIP3668 resolver that resolves from off chain data. KONG needs more than just a resolver, we need an entire registry on L2. So the fork introduces several files
 
 
-- L1Registry.sol is comparable to OffChainResolver.sol in the original example and is clearly meant to be deployed on L1
+- KongResolver.sol is comparable to OffChainResolver.sol in the original repo and is meant to be deployed on L1
 
 - IExtendedEntryGetter.sol interface is comparable to IExtendedResolver.sol in the original example
 
-- L2Registry is meant to be the contract that lives on Polygon/any sidechain or EVM compatible chain really. The gateway essentially "forwards" or "bridges" its state to the L1Registry using EIP3668.
+- L2KongResolver is meant to be the contract that lives on Polygon/any sidechain or EVM compatible chain really. The gateway/bridger "bridges" the state of L2KongResolver to  KongResolver using EIP3668 and the server defined in the ../gateway directory
 
 # ENS Offchain Resolver Contracts
 

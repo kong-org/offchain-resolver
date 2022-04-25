@@ -1,15 +1,19 @@
 # KONG Fork info
 This is a fork with major changes from the ENS off chain-resolver repo that demos eip3668. Eventually this will morph into the "Registry v2".
 
-## Similarites to ENS
+## Similarites to ENS offchain-resolver repo
 - 2 step resolution for record type flexibility
 - Canonical resolver provided with lots of useful functionality, like the .eth resolver
 - chips are analagous to names/nodes
+- gateway server attests to offchain resolutions by signing the data with it's private key
 
-## Differences from ENS
+## Differences from ENS offchain-resolver repo
+- Utilize L2 as "database" instead of json database
+    - the gateway aka the "bridger" bridges the L2 state to L1
+    - Ability to slash the bridger's stake if they resolve the wrong info from the L2
 - No recursion/subdomains
 - Instead of (Owner, ttl, resolver) in the root registry we store (manufacturer, elliptic curve, staking expiration, resolver), all write-once hw-level details
-- Ability to skip first resolution step
+- Ability to skip first resolution step. I.e. clients only need to know the address of the deployed canonical resolver
 
 # ENS Offchain Resolver
 ![CI](https://github.com/ensdomains/offchain-resolver/actions/workflows/main.yml/badge.svg)

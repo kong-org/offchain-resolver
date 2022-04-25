@@ -1,3 +1,10 @@
+# KONG fork details
+The main difference between the kong version and the original repo is that instead of a json database to host the names, we query the L2 which serves as our "database" in a sense
+
+The server can be started with
+
+`npm run build && node dist/index.js -k <private key of bridger> -r <rpc url of L2 node> -a <address of the deployed L2KongResolver>`
+
 # ENS Offchain Resolver Gateway
 This package implements a simple CCIP-read gateway server for ENS offchain resolution.
 
